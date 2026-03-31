@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+             http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd"
+             version="2.2">
+
+    <persistence-unit name="BadmintonCourtPU">
+        <!-- Chứa danh sách các Entity -->
+        <class>com.badminton.entity.Shift</class>
+        <class>com.badminton.entity.Employee</class>
+        <class>com.badminton.entity.Customer</class>
+        <class>com.badminton.entity.Court</class>
+        <class>com.badminton.entity.Product</class>
+        <class>com.badminton.entity.Booking</class>
+        <class>com.badminton.entity.Invoice</class>
+        <class>com.badminton.entity.ServiceDetail</class>
+
+        <properties>
+            <!-- Thông tin kết nối MySQL -->
+            <property name="javax.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
+            <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/badminton_court_management?useSSL=false&amp;serverTimezone=UTC"/>
+            <property name="javax.persistence.jdbc.user" value="root"/> <!-- Thay bằng username thực tế -->
+            <property name="javax.persistence.jdbc.password" value=""/> <!-- Thay bằng password thực tế -->
+
+            <!-- Hibernate Properties -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL8Dialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <!-- Hiển thị SQL log để debug -->
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+        </properties>
+    </persistence-unit>
+</persistence>
+
