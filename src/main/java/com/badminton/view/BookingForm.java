@@ -130,6 +130,12 @@ public class BookingForm extends JPanel {
                 
                 // Get again to acquire ID
                 customer = customerDAO.findByPhone(customerPhone);
+            } else {
+                // If customer exists, check if name has changed and update if it's currently empty/default
+                if (!customer.getName().equals(customerName)) {
+                    customer.setName(customerName);
+                    customerDAO.save(customer);
+                }
             }
 
             Court selectedCourt = courts.get(courtIndex);

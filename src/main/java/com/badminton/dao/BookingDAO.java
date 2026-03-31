@@ -37,5 +37,29 @@ public class BookingDAO {
             em.close();
         }
     }
+
+    public List<Booking> findByStatus(String status) {
+        EntityManager em = JpaUtil.getEntityManager();
+        try {
+            TypedQuery<Booking> query = em.createQuery(
+                "SELECT b FROM Booking b WHERE b.status = :status", Booking.class);
+            query.setParameter("status", status);
+            return query.getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
+    public List<Booking> findUnpaidBookings() {
+        EntityManager em = JpaUtil.getEntityManager();
+        try {
+            TypedQuery<Booking> query = em.createQuery(
+                "SELECT b FROM Booking b WHERE b.status IN ('Playing', 'Completed') " +
+                "AND b.id NOT IN (SELECT i.booking.id FROM Invoice i)", Booking.class);
+            return query.getResultList();
+        } finally {
+            em.close();
+        }
+    }
 }
 

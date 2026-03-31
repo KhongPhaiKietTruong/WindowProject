@@ -28,11 +28,18 @@ public class InvoiceService {
         // 1. Tính toán tiền thuê sân dựa trên thời lượng chơi (hẹn trước hoặc thực tế)
         Duration timePlayed = Duration.between(booking.getStartTime(), booking.getExpectedEndTime());
         // Chuyển đổi thành số giờ (VD: 90 phút = 1.5 giờ)
-        double hoursPlayed = timePlayed.toMinutes() / 60.0;
+        double hoursPlayed = Math.max(0.5, timePlayed.toMinutes() / 60.0); // Tối thiểu 30 phút
         
         // Giá sân
         double courtPricePerHour = booking.getCourt().getPricePerHour();
-        double courtFee = hoursPlayed * courtPricePerHour;
+        
+        // Áp dụng hệ số ca nếu nhân viên có ca làm việc
+        double multiplier = 1.0;
+        if (invoice.getEmployee() != null && invoice.getEmployee().getShift() != null) {
+            multiplier = invoice.getEmployee().getShift().getPriceMultiplier();
+        }
+        
+        double courtFee = hoursPlayed * courtPricePerHour * multiplier;
         invoice.setCourtFee(courtFee);
 
         // 2. Tính toán tiền các dịch vụ đi kèm
@@ -57,7 +64,7 @@ public class InvoiceService {
         double finalAmount = baseTotal - discountValue;
         invoice.setTotalAmount(finalAmount);
         
-        System.out.println("Hóa đơn tóm tắt: Tiền Sân=" + courtFee + ", Tiền Dịch Vụ=" + serviceTotal + ", Chiết Khấu=" + discountValue + " -> TỔNG TRẢ=" + finalAmount);
+        System.out.println("Hóa đơn tóm tắt: Tiền Sân=" + courtFee + " (x" + multiplier + "), Tiền Dịch Vụ=" + serviceTotal + ", Chiết Khấu=" + discountValue + " -> TỔNG TRẢ=" + finalAmount);
     }
     
     // Lưu hóa đơn sau khi đã tính toán
