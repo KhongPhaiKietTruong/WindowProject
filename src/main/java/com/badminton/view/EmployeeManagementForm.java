@@ -1,28 +1,28 @@
 package com.badminton.view;
 
-import com.badminton.dao.CustomerDAO;
-import com.badminton.entity.Customer;
+import com.badminton.dao.EmployeeDAO;
+import com.badminton.entity.Employee;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
-public class CustomerManagementForm extends JPanel {
+public class EmployeeManagementForm extends JPanel {
 
-    private CustomerDAO customerDAO;
+    private EmployeeDAO employeeDAO;
     private JTable table;
     private DefaultTableModel tableModel;
 
-    private Integer currentCustomerId = null;
+    private Integer currentEmployeeId = null;
 
     private JTextField txtName;
     private JTextField txtPhone;
-    private JComboBox<String> cbMemberType;
-    private JTextField txtDiscount;
+    private JTextField txtUsername;
+    private JPasswordField txtPassword;
 
-    public CustomerManagementForm() {
-        this.customerDAO = new CustomerDAO();
+    public EmployeeManagementForm() {
+        this.employeeDAO = new EmployeeDAO();
         initComponents();
         loadData();
     }
@@ -31,14 +31,14 @@ public class CustomerManagementForm extends JPanel {
         this.setLayout(new BorderLayout(10, 10));
         this.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JLabel lblTitle = new JLabel("QUẢN LÝ KHÁCH HÀNG", SwingConstants.CENTER);
+        JLabel lblTitle = new JLabel("QUẢN LÝ NHÂN VIÊN", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
         this.add(lblTitle, BorderLayout.NORTH);
 
         JPanel formPanel = new JPanel(new GridLayout(4, 2, 5, 5));
-        formPanel.setBorder(BorderFactory.createTitledBorder("Thông tin Khách hàng"));
+        formPanel.setBorder(BorderFactory.createTitledBorder("Thông tin Nhân viên"));
 
-        formPanel.add(new JLabel("Tên Khách hàng:"));
+        formPanel.add(new JLabel("Tên Nhân viên:"));
         txtName = new JTextField();
         formPanel.add(txtName);
 
@@ -46,28 +46,13 @@ public class CustomerManagementForm extends JPanel {
         txtPhone = new JTextField();
         formPanel.add(txtPhone);
 
-        formPanel.add(new JLabel("Loại Khách:"));
-        cbMemberType = new JComboBox<>(new String[]{"Normal", "Silver", "Gold", "VIP"});
-        formPanel.add(cbMemberType);
+        formPanel.add(new JLabel("Tài khoản:"));
+        txtUsername = new JTextField();
+        formPanel.add(txtUsername);
 
-        formPanel.add(new JLabel("Chiết khấu (%):"));
-        txtDiscount = new JTextField("0");
-        txtDiscount.setEditable(false);
-        formPanel.add(txtDiscount);
-
-        // Auto update discount
-        cbMemberType.addActionListener(e -> {
-            String type = cbMemberType.getSelectedItem() != null ? cbMemberType.getSelectedItem().toString() : "";
-            if ("VIP".equals(type)) {
-                txtDiscount.setText("15");
-            } else if ("Gold".equals(type)) {
-                txtDiscount.setText("10");
-            } else if ("Silver".equals(type)) {
-                txtDiscount.setText("5");
-            } else {
-                txtDiscount.setText("0");
-            }
-        });
+        formPanel.add(new JLabel("Mật khẩu:"));
+        txtPassword = new JPasswordField();
+        formPanel.add(txtPassword);
 
         JPanel btnPanel = new JPanel(new FlowLayout());
         JButton btnAdd = new JButton("Thêm/Cập nhật");
@@ -76,9 +61,9 @@ public class CustomerManagementForm extends JPanel {
         btnDelete.setBackground(new Color(255, 100, 100));
         btnDelete.setForeground(Color.WHITE);
 
-        btnAdd.addActionListener(e -> saveCustomer());
+        btnAdd.addActionListener(e -> saveEmployee());
         btnClear.addActionListener(e -> clearForm());
-        btnDelete.addActionListener(e -> deleteCustomer());
+        btnDelete.addActionListener(e -> deleteEmployee());
 
         btnPanel.add(btnAdd);
         btnPanel.add(btnClear);
@@ -88,7 +73,7 @@ public class CustomerManagementForm extends JPanel {
         topPanel.add(formPanel, BorderLayout.CENTER);
         topPanel.add(btnPanel, BorderLayout.SOUTH);
 
-        String[] columnNames = {"ID", "Tên KH", "SĐT", "Loại Khách", "Chiết Khấu (%)"};
+        String[] columnNames = {"ID", "Tên NV", "SĐT", "Tài khoản"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -100,11 +85,11 @@ public class CustomerManagementForm extends JPanel {
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && table.getSelectedRow() != -1) {
                 int row = table.getSelectedRow();
-                currentCustomerId = Integer.parseInt(tableModel.getValueAt(row, 0).toString());
+                currentEmployeeId = Integer.parseInt(tableModel.getValueAt(row, 0).toString());
                 txtName.setText(tableModel.getValueAt(row, 1).toString());
                 txtPhone.setText(tableModel.getValueAt(row, 2).toString());
-                cbMemberType.setSelectedItem(tableModel.getValueAt(row, 3).toString());
-                txtDiscount.setText(tableModel.getValueAt(row, 4).toString());
+                txtUsername.setText(tableModel.getValueAt(row, 3).toString());
+                txtPassword.setText(""); // Don't show password
             }
         });
 
@@ -119,41 +104,57 @@ public class CustomerManagementForm extends JPanel {
 
     private void loadData() {
         tableModel.setRowCount(0);
-        List<Customer> customers = customerDAO.findAll();
-        for (Customer c : customers) {
+        List<Employee> employees = employeeDAO.findAll();
+        for (Employee emp : employees) {
             Object[] row = {
-                c.getId(),
-                c.getName(),
-                c.getPhone(),
-                c.getMemberType(),
-                c.getDiscountPercent()
+                emp.getId(),
+                emp.getName(),
+                emp.getPhone(),
+                emp.getUsername()
             };
             tableModel.addRow(row);
         }
     }
 
-    private void saveCustomer() {
+    private void saveEmployee() {
         try {
             String name = txtName.getText().trim();
             String phone = txtPhone.getText().trim();
-            String type = cbMemberType.getSelectedItem().toString();
-            Double discount = Double.parseDouble(txtDiscount.getText().trim());
+            String username = txtUsername.getText().trim();
+            String password = new String(txtPassword.getPassword()).trim();
 
-            if (name.isEmpty() || phone.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Vui lòng nhập tên và số điện thoại!");
+            if (name.isEmpty() || username.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Tên và Tài khoản!");
                 return;
             }
 
-            Customer customer = new Customer();
-            if (currentCustomerId != null) {
-                customer.setId(currentCustomerId);
+            if (currentEmployeeId == null && password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Mật khẩu cho nhân viên mới!");
+                return;
             }
-            customer.setName(name);
-            customer.setPhone(phone);
-            customer.setMemberType(type);
-            customer.setDiscountPercent(discount);
 
-            customerDAO.save(customer);
+            Employee employee = new Employee();
+            if (currentEmployeeId != null) {
+                employee.setId(currentEmployeeId);
+            }
+            employee.setName(name);
+            employee.setPhone(phone);
+            employee.setUsername(username);
+            // If updating and password left empty, ideally keep old password. 
+            // In a real app we'd fetch the old entity first. For simplicity we just require it or overwrite.
+            if (!password.isEmpty()) {
+                employee.setPassword(password);
+            } else {
+                // Fetch existing to get pass (simple hack since we don't want to show it)
+                for(Employee e : employeeDAO.findAll()) {
+                    if(e.getId().equals(currentEmployeeId)) {
+                        employee.setPassword(e.getPassword());
+                        break;
+                    }
+                }
+            }
+
+            employeeDAO.save(employee);
             JOptionPane.showMessageDialog(this, "Lưu thành công!");
             clearForm();
             loadData();
@@ -162,15 +163,15 @@ public class CustomerManagementForm extends JPanel {
         }
     }
 
-    private void deleteCustomer() {
-        if (currentCustomerId == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn khách hàng để xóa!");
+    private void deleteEmployee() {
+        if (currentEmployeeId == null) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân viên để xóa!");
             return;
         }
-        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắn xóa khách hàng này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắn xóa nhân viên này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                customerDAO.delete(currentCustomerId);
+                employeeDAO.delete(currentEmployeeId);
                 JOptionPane.showMessageDialog(this, "Xóa thành công!");
                 clearForm();
                 loadData();
@@ -181,11 +182,12 @@ public class CustomerManagementForm extends JPanel {
     }
 
     private void clearForm() {
-        currentCustomerId = null;
+        currentEmployeeId = null;
         txtName.setText("");
         txtPhone.setText("");
-        cbMemberType.setSelectedIndex(0);
-        txtDiscount.setText("0");
+        txtUsername.setText("");
+        txtPassword.setText("");
         table.clearSelection();
     }
 }
+

@@ -18,12 +18,12 @@ public class BookingForm extends JPanel {
     private CustomerDAO customerDAO;
     private BookingController bookingController;
 
-    private JComboBox<String> cbCustomer;
+    private JTextField txtCustomerName;
+    private JTextField txtCustomerPhone;
     private JComboBox<String> cbCourt;
     private JTextField txtStartTime; // Format: yyyy-MM-dd HH:mm
     private JTextField txtEndTime;   // Format: yyyy-MM-dd HH:mm
 
-    private List<Customer> customers;
     private List<Court> courts;
 
     public BookingForm() {
@@ -42,26 +42,41 @@ public class BookingForm extends JPanel {
         lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
         this.add(lblTitle, BorderLayout.NORTH);
 
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        JPanel formPanel = new JPanel(new GridLayout(5, 2, 10, 10));
         formPanel.setBorder(BorderFactory.createTitledBorder("Thông tin đặt sân"));
 
-        formPanel.add(new JLabel("Khách hàng:"));
-        cbCustomer = new JComboBox<>();
-        formPanel.add(cbCustomer);
+        formPanel.add(new JLabel("Tên khách hàng:"));
+        txtCustomerName = new JTextField();
+        formPanel.add(txtCustomerName);
+
+        formPanel.add(new JLabel("SĐT (Dùng để tìm KH cũ):"));
+        txtCustomerPhone = new JTextField();
+        formPanel.add(txtCustomerPhone);
 
         formPanel.add(new JLabel("Sân:"));
         cbCourt = new JComboBox<>();
         formPanel.add(cbCourt);
 
         formPanel.add(new JLabel("Giờ chơi (yyyy-MM-dd HH:mm):"));
-        // Mặc định là giờ hiện tại
         txtStartTime = new JTextField(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
         formPanel.add(txtStartTime);
 
         formPanel.add(new JLabel("Giờ kết thúc dự kiến (yyyy-MM-dd HH:mm):"));
-        // Mặc định là hiện tại + 1 tiếng
         txtEndTime = new JTextField(LocalDateTime.now().plusHours(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
         formPanel.add(txtEndTime);
+
+        // Auto load customer info when phone loses focus
+        txtCustomerPhone.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                String phone = txtCustomerPhone.getText().trim();
+                if (!phone.isEmpty()) {
+                    Customer c = customerDAO.findByPhone(phone);
+                    if (c != null) {
+                        txtCustomerName.setText(c.getName());
+                    }
+                }
+            }
+        });
 
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.add(formPanel, BorderLayout.NORTH);
@@ -81,12 +96,6 @@ public class BookingForm extends JPanel {
     }
 
     private void loadData() {
-        customers = customerDAO.findAll();
-        cbCustomer.removeAllItems();
-        for (Customer c : customers) {
-            cbCustomer.addItem(c.getId() + " - " + c.getName());
-        }
-
         courts = courtDAO.findAll();
         cbCourt.removeAllItems();
         for (Court c : courts) {
@@ -96,15 +105,33 @@ public class BookingForm extends JPanel {
 
     private void processBooking() {
         try {
-            int customerIndex = cbCustomer.getSelectedIndex();
-            int courtIndex = cbCourt.getSelectedIndex();
-            
-            if (customerIndex < 0 || courtIndex < 0) {
-                JOptionPane.showMessageDialog(this, "Vui lòng chọn khách và sân!");
+            String customerName = txtCustomerName.getText().trim();
+            String customerPhone = txtCustomerPhone.getText().trim();
+
+            if (customerName.isEmpty() || customerPhone.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Tên và SĐT khách hàng!");
                 return;
             }
 
-            Customer selectedCustomer = customers.get(customerIndex);
+            int courtIndex = cbCourt.getSelectedIndex();
+            if (courtIndex < 0) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn sân!");
+                return;
+            }
+
+            Customer customer = customerDAO.findByPhone(customerPhone);
+            if (customer == null) {
+                customer = new Customer();
+                customer.setName(customerName);
+                customer.setPhone(customerPhone);
+                customer.setMemberType("Normal");
+                customer.setDiscountPercent(0.0);
+                customerDAO.save(customer);
+                
+                // Get again to acquire ID
+                customer = customerDAO.findByPhone(customerPhone);
+            }
+
             Court selectedCourt = courts.get(courtIndex);
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -116,8 +143,7 @@ public class BookingForm extends JPanel {
                 return;
             }
 
-            // Gọi Controller xử lý nghiệp vụ đặt sân
-            bookingController.handlBookingAction(this, selectedCustomer, selectedCourt, startTime, endTime);
+            bookingController.handleBookingAction(this, customer, selectedCourt, startTime, endTime);
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi định dạng ngày giờ! Hãy nhập theo chuẩn yyyy-MM-dd HH:mm");

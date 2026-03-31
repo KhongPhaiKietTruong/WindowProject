@@ -24,8 +24,8 @@ public class BookingController {
      * @param startTime Thời gian bắt đầu
      * @param expectedEndTime Thời gian kết thúc dự kiến
      */
-    public void handlBookingAction(java.awt.Component parentComponent, Customer customer, Court court, 
-                                   LocalDateTime startTime, LocalDateTime expectedEndTime) {
+    public void handleBookingAction(java.awt.Component parentComponent, Customer customer, Court court,
+                                    LocalDateTime startTime, LocalDateTime expectedEndTime) {
         
         // Tạo đối tượng Booking
         Booking booking = new Booking();

@@ -63,7 +63,7 @@ public class MainForm extends JFrame {
         itemSan.addActionListener(e -> switchForm(new CourtManagementForm()));
         itemKhach.addActionListener(e -> switchForm(new CustomerManagementForm()));
         itemSanPham.addActionListener(e -> switchForm(new ProductManagementForm()));
-        itemNhanVien.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quản lý Nhân Viên đang được phát triển!"));
+        itemNhanVien.addActionListener(e -> switchForm(new EmployeeManagementForm()));
 
         // Menu Nghiệp vụ
         itemDatSan.addActionListener(e -> switchForm(new BookingForm()));

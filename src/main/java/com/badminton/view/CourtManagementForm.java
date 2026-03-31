@@ -14,8 +14,8 @@ public class CourtManagementForm extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
 
-    // Các trường nhập liệu
-    private JTextField txtId;
+    private Integer currentCourtId = null;
+
     private JTextField txtName;
     private JComboBox<String> cbCourtType;
     private JTextField txtPrice;
@@ -30,19 +30,12 @@ public class CourtManagementForm extends JPanel {
         this.setLayout(new BorderLayout(10, 10));
         this.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Tiêu đề
         JLabel lblTitle = new JLabel("QUẢN LÝ SÂN CẦU LÔNG", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
         this.add(lblTitle, BorderLayout.NORTH);
 
-        // Vùng nhập liệu (Form)
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 5, 5));
+        JPanel formPanel = new JPanel(new GridLayout(3, 2, 5, 5));
         formPanel.setBorder(BorderFactory.createTitledBorder("Thông tin Sân"));
-
-        formPanel.add(new JLabel("Mã Sân (Tự động):"));
-        txtId = new JTextField();
-        txtId.setEditable(false);
-        formPanel.add(txtId);
 
         formPanel.add(new JLabel("Tên Sân:"));
         txtName = new JTextField();
@@ -53,26 +46,41 @@ public class CourtManagementForm extends JPanel {
         formPanel.add(cbCourtType);
 
         formPanel.add(new JLabel("Đơn Giá Thuê/Giờ:"));
-        txtPrice = new JTextField();
+        txtPrice = new JTextField("100000"); // default for Thảm
+        txtPrice.setEditable(false);
         formPanel.add(txtPrice);
 
-        // Vùng nút chức năng
+        // Auto update price based on type
+        cbCourtType.addActionListener(e -> {
+            String type = cbCourtType.getSelectedItem() != null ? cbCourtType.getSelectedItem().toString() : "";
+            if ("Sân Thảm".equals(type)) {
+                txtPrice.setText("100000");
+            } else if ("Sân Gỗ".equals(type)) {
+                txtPrice.setText("120000");
+            } else {
+                txtPrice.setText("80000");
+            }
+        });
+
         JPanel btnPanel = new JPanel(new FlowLayout());
         JButton btnAdd = new JButton("Thêm/Cập nhật");
         JButton btnClear = new JButton("Làm mới");
+        JButton btnDelete = new JButton("Xóa");
+        btnDelete.setBackground(new Color(255, 100, 100));
+        btnDelete.setForeground(Color.WHITE);
 
         btnAdd.addActionListener(e -> saveCourt());
         btnClear.addActionListener(e -> clearForm());
+        btnDelete.addActionListener(e -> deleteCourt());
 
         btnPanel.add(btnAdd);
         btnPanel.add(btnClear);
+        btnPanel.add(btnDelete);
 
-        // Gộp Form và Nút
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(formPanel, BorderLayout.CENTER);
         topPanel.add(btnPanel, BorderLayout.SOUTH);
 
-        // Setup bảng (Table)
         String[] columnNames = {"ID", "Tên Sân", "Loại Sân", "Giá/Giờ"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -82,11 +90,10 @@ public class CourtManagementForm extends JPanel {
         };
         table = new JTable(tableModel);
         
-        // Sự kiện click vào dòng
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && table.getSelectedRow() != -1) {
                 int row = table.getSelectedRow();
-                txtId.setText(tableModel.getValueAt(row, 0).toString());
+                currentCourtId = Integer.parseInt(tableModel.getValueAt(row, 0).toString());
                 txtName.setText(tableModel.getValueAt(row, 1).toString());
                 cbCourtType.setSelectedItem(tableModel.getValueAt(row, 2).toString());
                 txtPrice.setText(tableModel.getValueAt(row, 3).toString());
@@ -95,7 +102,6 @@ public class CourtManagementForm extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(table);
         
-        // Container ở giữa để chứa cả Form và Bảng
         JPanel centerContainer = new JPanel(new BorderLayout(5, 5));
         centerContainer.add(topPanel, BorderLayout.NORTH);
         centerContainer.add(scrollPane, BorderLayout.CENTER);
@@ -104,7 +110,7 @@ public class CourtManagementForm extends JPanel {
     }
 
     private void loadData() {
-        tableModel.setRowCount(0); // Xóa dữ liệu cũ
+        tableModel.setRowCount(0);
         List<Court> courts = courtDAO.findAll();
         for (Court c : courts) {
             Object[] row = {
@@ -129,8 +135,8 @@ public class CourtManagementForm extends JPanel {
             }
 
             Court court = new Court();
-            if (!txtId.getText().isEmpty()) {
-                court.setId(Integer.parseInt(txtId.getText()));
+            if (currentCourtId != null) {
+                court.setId(currentCourtId);
             }
             court.setName(name);
             court.setCourtType(type);
@@ -140,18 +146,34 @@ public class CourtManagementForm extends JPanel {
             JOptionPane.showMessageDialog(this, "Lưu thành công!");
             clearForm();
             loadData();
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Đơn giá phải là một số hợp lệ!");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage());
         }
     }
 
+    private void deleteCourt() {
+        if (currentCourtId == null) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn sân để xóa!");
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa sân này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                courtDAO.delete(currentCourtId);
+                JOptionPane.showMessageDialog(this, "Xóa thành công!");
+                clearForm();
+                loadData();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage());
+            }
+        }
+    }
+
     private void clearForm() {
-        txtId.setText("");
+        currentCourtId = null;
         txtName.setText("");
         cbCourtType.setSelectedIndex(0);
-        txtPrice.setText("");
+        txtPrice.setText("100000");
         table.clearSelection();
     }
 }

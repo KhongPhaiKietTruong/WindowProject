@@ -1,18 +1,18 @@
 package com.badminton.dao;
-import com.badminton.entity.Product;
+import com.badminton.entity.Employee;
 import com.badminton.util.JpaUtil;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.util.List;
-public class ProductDAO {
-    public void save(Product product) {
+public class EmployeeDAO {
+    public void save(Employee employee) {
         EntityManager em = JpaUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            if (product.getId() == null) {
-                em.persist(product);
+            if (employee.getId() == null) {
+                em.persist(employee);
             } else {
-                em.merge(product);
+                em.merge(employee);
             }
             em.getTransaction().commit();
         } catch (Exception e) {
@@ -20,6 +20,7 @@ public class ProductDAO {
                 em.getTransaction().rollback();
             }
             e.printStackTrace();
+            throw new RuntimeException("Lỗi lưu nhân viên (có thể trùng username?)");
         } finally {
             em.close();
         }
@@ -28,24 +29,24 @@ public class ProductDAO {
         EntityManager em = JpaUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            Product product = em.find(Product.class, id);
-            if (product != null) {
-                em.remove(product);
+            Employee employee = em.find(Employee.class, id);
+            if (employee != null) {
+                em.remove(employee);
             }
             em.getTransaction().commit();
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
-            throw new RuntimeException("Không thể xóa sản phẩm đã có giao dịch!");
+            throw new RuntimeException("Không thể xóa nhân viên này!");
         } finally {
             em.close();
         }
     }
-    public List<Product> findAll() {
+    public List<Employee> findAll() {
         EntityManager em = JpaUtil.getEntityManager();
         try {
-            TypedQuery<Product> query = em.createQuery("SELECT p FROM Product p", Product.class);
+            TypedQuery<Employee> query = em.createQuery("SELECT e FROM Employee e", Employee.class);
             return query.getResultList();
         } finally {
             em.close();

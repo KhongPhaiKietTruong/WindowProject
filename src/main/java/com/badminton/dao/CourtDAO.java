@@ -1,16 +1,11 @@
 package com.badminton.dao;
-
 import com.badminton.entity.Court;
 import com.badminton.util.JpaUtil;
-
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.time.LocalDateTime;
 import java.util.List;
-
 public class CourtDAO {
-
-    // Thêm mới hoặc cập nhật sân
     public void save(Court court) {
         EntityManager em = JpaUtil.getEntityManager();
         try {
@@ -30,8 +25,25 @@ public class CourtDAO {
             em.close();
         }
     }
-
-    // Lấy danh sách tất cả các sân
+    public void delete(Integer id) {
+        EntityManager em = JpaUtil.getEntityManager();
+        try {
+            em.getTransaction().begin();
+            Court court = em.find(Court.class, id);
+            if (court != null) {
+                em.remove(court);
+            }
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            e.printStackTrace();
+            throw new RuntimeException("Không thể xóa sân vì có dữ liệu liên quan (Booking...)");
+        } finally {
+            em.close();
+        }
+    }
     public List<Court> findAll() {
         EntityManager em = JpaUtil.getEntityManager();
         try {
@@ -41,11 +53,6 @@ public class CourtDAO {
             em.close();
         }
     }
-
-    // Tìm kiếm sân trống trong một khoảng thời gian (start -> end)
-    // Sân trống nếu không có Booking nào thỏa mãn: 
-    //   (Booking có trạng thái Playing, Pending) VÀ
-    //   (booking.startTime < end AND booking.expectedEndTime > start)
     public List<Court> findAvailableCourts(LocalDateTime start, LocalDateTime end) {
         EntityManager em = JpaUtil.getEntityManager();
         try {
@@ -63,4 +70,3 @@ public class CourtDAO {
         }
     }
 }
-
